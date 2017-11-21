@@ -1,132 +1,129 @@
+import java.util.List;
+import java.util.ArrayList;
+
 // recursive descent parser calculator
 
 class Calculator{
-	// global variable for the intput string
-	public static String expression = "";
+	
+	public int currentTokenPosition = 0;
+	public List<Token> tokens;
 
-	// current index in the input string
-	public static int currentCharPostition = 0;
-
-	// holds the next character
-	public static char look;
-
-	public static void getChar(){
-		if(currentCharPostition < expression.length()){
-			look = expression.charAt(currentCharPostition);
+	public Token getToken(int offset){
+		if(currentTokenPosition + offset >= tokens.size()){
+			return new Token("", "NO_TOKEN");
 		}
-		currentCharPostition++;
+		return tokens.get(currentTokenPosition + offset);
 	}
 
-	// parse an integer and return it
-	public static int getNum(){
-		int number = new Integer(look + "").intValue();
-		getChar();
-		return number;
+	public Token currentToken(){
+		return getToken(0);
 	}
 
-	public static void init(){
-		getChar();
+	public void eatToken(int offset){
+		currentTokenPosition = currentTokenPosition + offset;
 	}
 
-	// consume the next character if it matches the input, otherwise throw an error
-	public static void matchAndEat(char chr){
-		if(look == chr){
-			getChar();
-		}
-		else{
-			System.out.println("Error: Unexpected Character");
+	public Token matchAndEat(String type){
+		Token token = currentToken();
+
+		if(!currentToken().type.equals(type)){
+			System.out.println("Encountered" + token.type +
+								" but " + type + " expected.");
 			System.exit(0);
 		}
+		eatToken(1);
+		return token;
 	}
 
-	// term : factor ('*' | '/')
-	public static int term(){
-		int result = factor();
-		while((look == '*') || (look == '/') || (look == '%')){
-			switch(look){
-				case '*':
-					result = result * multiply();
-					break;
-				case '/':
-					result = result / divide();
-					break;
-				case '%':
-					result = result % modulo();
-			}
-		}
 
-		return result;
-	}
 
 	// match a plus sign and return the next term
-	public static int add(){
-		matchAndEat('+');
+	public int add(){
+		matchAndEat("ADD");
 		return term();
 	}
 
-	public static int subtract(){
-		matchAndEat('-');
+	public int subtract(){
+		matchAndEat("SUBTRACT");
 		return term();
 	}
 
 
 	// arithemtic expression : term ('+' | '-') term
-	public static int arithmeticExpression(){
+	public int arithmeticExpression(){
 		// left operand
 		int result = term();
 
-		while((look == '+') || (look == '-')){
-			switch(look){
-				case '+':
+		while(currentToken().type.equals("ADD")||
+			  currentToken().type.equals("SUBTRACT")){
+
+			switch(currentToken().type){
+				case "ADD":
 					result = result + add();
 					break;
-				case '-':
+				case "SUBTRACT":
 					result = result - subtract();
 					break;
 			}
 		}
-
 		return result;
 	}
 
 	// factor : NUM | '(' arithmeticExpression ')'
-	public static int factor(){
+	public int factor(){
 		int result = 0;
 
 		// if a lapren is encountered then we evaluate the expression contained within it first
-		if(look == '('){
-			matchAndEat('(');
+		if(currentToken().type.equals("LEFT_PAREN")){
+			matchAndEat("LEFT_PAREN");
 			result = arithmeticExpression();
-			matchAndEat(')');
+			matchAndEat("RIGHT_PAREN");
 		}
 		// base case, just return a number
-		else{
-			result = getNum();
+		else if(currentToken().type.equals("NUMBER")){
+			result = new Integer(currentToken().text).intValue();
+			matchAndEat("NUMBER");
 		}
 		return result;
 	}
 
-	public static int multiply(){
-		matchAndEat('*');
+	public int term(){
+		int result = factor();
+		while(currentToken().type.equals("MULTIPLY") ||
+			  currentToken().type.equals("DIVIDE")){
+
+			switch(currentToken().type){
+				case "MULTIPLY":
+					result *= multiply();
+					break;
+				case "DIVIDE":
+					result /= divide();
+					break;
+			}
+		}
+		return result;
+	}
+
+	public int multiply(){
+		matchAndEat("MULTIPLY");
 		return factor();
 	}
 
-	public static int divide(){
-		matchAndEat('/');
+	public int divide(){
+		matchAndEat("DIVIDE");
 		return factor();
 	}
 
-	public static int modulo(){
-		matchAndEat('%');
-		return factor();
-	}
 
 	public static void main(String[] args){
-		expression = "((9*3-1+8)*5-7)%8";
+		String expression = "((853+92*5)*10-20/2+771)";
+		expression += " ";
 		System.out.println("Expression: " + expression);
 		// get the first character
-		init();
+		Calculator calc = new Calculator();
+		Tokenizer tokenizer = new Tokenizer();
 		// begin the recursive descent
-		System.out.println(arithmeticExpression());
+		calc.tokens = tokenizer.tokenize(expression);
+		System.out.println(calc.arithmeticExpression());
 	}
 }
