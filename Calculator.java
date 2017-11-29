@@ -83,6 +83,15 @@ class Calculator{
 		return node;
 	}
 
+	public Node signedFactor(){
+		if(currentToken().type == TokenType.SUBTRACT){
+			matchAndEat(TokenType.SUBTRACT);
+			Node node = new NegOpNode(factor());
+			return node;
+		}
+		return factor();
+	}
+
 	// factor : NUM | '(' arithmeticExpression ')'
 	public Node factor(){
 		Node result = null;
@@ -102,7 +111,7 @@ class Calculator{
 	}
 
 	public Node term(){
-		Node node = factor();
+		Node node = signedFactor();
 		while(isMulOp(currentToken().type)){
 
 			switch(currentToken().type){
@@ -133,12 +142,21 @@ class Calculator{
 	}
 
 	public Node booleanTerm(){
-		Node node = booleanFactor();
+		Node node = notFactor();
 		while(currentToken().type == TokenType.AND){
 			matchAndEat(TokenType.AND);
-			node = new BinOpNode(TokenType.AND, node, booleanFactor());
+			node = new BinOpNode(TokenType.AND, node, notFactor());
 		}
 		return node;
+	}
+
+	public Node notFactor(){
+		if(currentToken().type == TokenType.NOT){
+			matchAndEat(TokenType.NOT);
+			Node node = booleanFactor();
+			return new NotOpNode(node);
+		}
+		return booleanFactor();
 	}
 
 	public Node booleanFactor(){
@@ -231,7 +249,7 @@ class Calculator{
 		Calculator calc = new Calculator();
 		Tokenizer tokenizer = new Tokenizer();
 
-		String expression = "((5+1)*100-2+3)";
+		String expression = "!(-100 <= 100)";
 		expression += " ";
 		System.out.println("Expression: " + expression);
 		calc.tokens = tokenizer.tokenize(expression);
