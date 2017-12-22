@@ -1,13 +1,83 @@
 import java.util.List;
 import java.util.LinkedList;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 // recursive descent parser calculator
 
-class Calculator{
+class Parser{
 	
 	public int currentTokenPosition = 0;
 	public List<Token> tokens;
+
+	public Map symbolTable = new HashMap();
+
+
+	public Parser() {}
+
+	public Parser(List<Token> tokens){
+		this.tokens = tokens;
+	}
+
+	public List<Token> getTokens(){
+		return tokens;
+	}
+
+	// Symbol table methods start //
+	public Object setVariable(String name, Object value){
+		symbolTable.put(name, value);
+		return value;
+	}
+
+	public Object getVariable(String name){
+		Object value = (Object) symbolTable.get(name);
+		if(value != null) return value;
+
+		return null;
+	}
+
+	// symbol table methods end //
+
+
+	public List block(){
+		List<Node> statements = new LinkedList<>();
+		while( currentToken().type != TokenType.END){
+			statements.add(statement());
+		}
+		matchAndEat(TokenType.END);
+		return statements;
+	}
+
+	public Node statement(){
+		Node node = null;
+		TokenType type = currentToken().type;
+
+		if(isAssignment()){
+			node = assignment();
+		}
+		else if(type == TokenType.PRINT){
+			matchAndEat(TokenType.PRINT);
+			node = new PrintNode(expression(), "sameline");
+		}
+		else if(type == TokenType.PRINTLN){
+			matchAndEat(TokenType.PRINTLN);
+			node = new PrintNode(expression(), "newline");
+		}
+		else if(type == TokenType.WAIT){
+			matchAndEat(TokenType.WAIT);
+			node = new WaitNode(expression());
+		}
+		else {
+			System.out.println("Unknown language construct: " 
+				+ currentToken().text);
+			System.exit(0);
+		}
+		return node;
+	}
+
+
+	///////////////////////////////////////////
 
 	public Token getToken(int offset){
 		if(currentTokenPosition + offset >= tokens.size()){
@@ -40,7 +110,20 @@ class Calculator{
 		return token;
 	}
 
+	/////////////////////////////////////////
 
+	public Node assignment(){
+		Node node = null;
+		// left arg is an identifier
+		String name = matchAndEat(TokenType.KEYWORD).text;
+		// eat the equals sign
+		matchAndEat(TokenType.ASSIGNMENT);
+
+		Node value = expression();
+		node = new AssignmentNode(name, value, this);
+
+		return node;
+	}
 
 	// match a plus sign and return the next term
 	public Node add(){
@@ -108,7 +191,20 @@ class Calculator{
 			Token token = matchAndEat(TokenType.NUMBER);
 			result = new NumberNode(new Integer(token.text));
 		}
+		else if(isString()){
+			Token token = matchAndEat(TokenType.STRING);
+			result = new StringNode(new String(token.text));
+		}
+		else if (isKeyWord()){
+			result = variable();
+		}
 		return result;
+	}
+
+	public Node variable(){
+		Token token = matchAndEat(TokenType.KEYWORD);
+		Node node = new VariableNode(token.text, this);
+		return node;
 	}
 
 	public Node term(){
@@ -209,7 +305,11 @@ class Calculator{
 		return new BinOpNode(TokenType.NOTEQUAL, node , arithmeticExpression());
 	}
 
+	/////////////////////////////
 	// recognizers
+	/////////////////////////////
+
+
 	public boolean isMulOp(TokenType type){
 		return type == TokenType.MULTIPLY || type == TokenType.DIVIDE;
 	}
@@ -236,6 +336,19 @@ class Calculator{
 		return currentToken().type == TokenType.NUMBER;
 	}
 
+	public boolean isString(){
+		return currentToken().type == TokenType.STRING;
+	}
+
+	public boolean isKeyWord(){
+		return currentToken().type == TokenType.KEYWORD;
+	}
+
+	public boolean isAssignment(){
+		TokenType type = currentToken().type;
+		return type == TokenType.KEYWORD && nextToken().type == TokenType.ASSIGNMENT;
+	}
+
 
 	////////////////////////
 
@@ -249,7 +362,7 @@ class Calculator{
 	public static void main(String[] args){
 		
 		Tokenizer tokenizer = new Tokenizer();
-		Calculator calc = new Calculator();
+		Parser calc = new Parser();
 
 		String conditionExpr = "1<10 ";
 		String bodyExpr = "10+20 ";
