@@ -8,6 +8,30 @@ class Tokenizer{
 		return "+-*/<>=!|&".contains(chr + "");
 	}
 
+	public TokenType findStatementType(String str){
+		TokenType type = TokenType.UNKNOWN;
+		switch(str){
+			case "script":
+				type = TokenType.SCRIPT;
+			break;
+			case "end":
+				type = TokenType.END;
+				break;
+			case "print":
+				type = TokenType.PRINT;
+				break;
+			case "println":
+				type = TokenType.PRINTLN;
+				break;
+			case "wait":
+				type = TokenType.WAIT;
+				break;
+			default:
+				type = TokenType.KEYWORD;
+		}
+		return type;
+	}
+
 	public TokenType findOpType(char firstOperator, char nextChar){
 		TokenType type = TokenType.UNKNOWN;
 		switch(firstOperator){
@@ -71,6 +95,7 @@ class Tokenizer{
 	public List<Token> tokenize(String source){
 		List<Token> tokens = new ArrayList<Token>();
 		Token token = null;
+		
 		String tokenText = "";
 		char firstOperator = '\0';
 		TokenizeState state = TokenizeState.DEFAULT;
@@ -89,6 +114,10 @@ class Tokenizer{
 						TokenType parenType = findParenType(chr);
 						tokens.add(new Token(Character.toString(chr), parenType));
 					}
+					else if(Character.isLetter(chr)){
+						tokenText += chr;
+						state = TokenizeState.KEYWORD;
+					}
 					else if(Character.isDigit(chr)){
 						tokenText += chr;
 						state = TokenizeState.NUMBER;
@@ -100,6 +129,18 @@ class Tokenizer{
 					}
 					else{
 						tokens.add(new Token(tokenText, TokenType.NUMBER));
+						tokenText = "";
+						state = TokenizeState.DEFAULT;
+						i--;
+					}
+					break;
+				case KEYWORD:
+					if(Character.isLetterOrDigit(chr)){
+						tokenText += chr;
+					}
+					else{
+						TokenType type = findStatementType(tokenText);
+						tokens.add(new Token(tokenText, type));
 						tokenText = "";
 						state = TokenizeState.DEFAULT;
 						i--;

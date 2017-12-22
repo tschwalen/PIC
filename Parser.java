@@ -4,10 +4,57 @@ import java.util.ArrayList;
 
 // recursive descent parser calculator
 
-class Calculator{
+class Parser{
 	
 	public int currentTokenPosition = 0;
 	public List<Token> tokens;
+
+
+	public Parser() {}
+
+	public Parser(List<Token> tokens){
+		this.tokens = tokens;
+	}
+
+	public List<Token> getTokens(){
+		return tokens;
+	}
+
+	public List block(){
+		List<Node> statements = new LinkedList<>();
+		while( currentToken().type != TokenType.END){
+			statements.add(statement());
+		}
+		matchAndEat(TokenType.END);
+		return statements;
+	}
+
+	public Node statement(){
+		Node node = null;
+		TokenType type = currentToken().type;
+
+		if(type == TokenType.PRINT){
+			matchAndEat(TokenType.PRINT);
+			node = new PrintNode(expression(), "sameline");
+		}
+		else if(type == TokenType.PRINTLN){
+			matchAndEat(TokenType.PRINTLN);
+			node = new PrintNode(expression(), "newline");
+		}
+		else if(type == TokenType.WAIT){
+			matchAndEat(TokenType.WAIT);
+			node = new WaitNode(expression());
+		}
+		else {
+			System.out.println("Unknown language construct: " 
+				+ currentToken().text);
+			System.exit(0);
+		}
+		return node;
+	}
+
+
+	///////////////////////////////////////////
 
 	public Token getToken(int offset){
 		if(currentTokenPosition + offset >= tokens.size()){
@@ -249,7 +296,7 @@ class Calculator{
 	public static void main(String[] args){
 		
 		Tokenizer tokenizer = new Tokenizer();
-		Calculator calc = new Calculator();
+		Parser calc = new Parser();
 
 		String conditionExpr = "1<10 ";
 		String bodyExpr = "10+20 ";
