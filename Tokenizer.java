@@ -17,6 +17,15 @@ class Tokenizer{
 			case "end":
 				type = TokenType.END;
 				break;
+			case "while":
+				type = TokenType.WHILE;
+				break;
+			case "if":
+				type = TokenType.IF;
+				break;
+			case "else":
+				type = TokenType.ELSE;
+				break;
 			case "print":
 				type = TokenType.PRINT;
 				break;

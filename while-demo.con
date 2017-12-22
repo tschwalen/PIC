@@ -1,0 +1,17 @@
+script
+	# sort of a fibonacci
+	temp = 0
+	secondLast = 0
+	last = 1
+	count = 1
+	while count <= 12
+		temp = last + secondLast
+
+		secondLast = last
+		last = temp
+
+		println temp
+		count = count + 1 
+		
+	end
+end

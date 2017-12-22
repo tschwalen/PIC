@@ -33,11 +33,9 @@ public class Interpreter {
 		if(debug) dumpTokens(parser);
 
 		parser.matchAndEat(TokenType.SCRIPT);
-		List<Node> script = parser.block();
+		Node script = parser.block();
 
-		for(Node statement : script){
-			statement.eval();
-		}
+		script.eval();
 	}
 
 	public void dumpTokens(Parser parser){

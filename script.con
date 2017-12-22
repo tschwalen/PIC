@@ -1,0 +1,12 @@
+script
+	# this Turkish fellow may be on to something
+	count = 5
+	msg = count
+	var = "string"
+	print "Value of count variable is "
+	println count
+	count = count + 10
+	print "New value of count variable is "
+	println count
+	println var
+end

@@ -40,13 +40,13 @@ class Parser{
 	// symbol table methods end //
 
 
-	public List block(){
+	public BlockNode block(){
 		List<Node> statements = new LinkedList<>();
 		while( currentToken().type != TokenType.END){
 			statements.add(statement());
 		}
 		matchAndEat(TokenType.END);
-		return statements;
+		return new BlockNode(statements);
 	}
 
 	public Node statement(){
@@ -55,6 +55,12 @@ class Parser{
 
 		if(isAssignment()){
 			node = assignment();
+		}
+		else if(isWhile()){
+			node = whileLoop();
+		}
+		else if(isIfElse()){
+			node = ifStatement();
 		}
 		else if(type == TokenType.PRINT){
 			matchAndEat(TokenType.PRINT);
@@ -111,6 +117,32 @@ class Parser{
 	}
 
 	/////////////////////////////////////////
+
+	public Node ifStatement(){
+		Node condition = null, thenPart = null, elsePart = null;
+
+		matchAndEat(TokenType.IF);
+		condition = expression();
+		thenPart = block();
+		if(currentToken().type == TokenType.ELSE){
+			matchAndEat(TokenType.ELSE);
+			if(currentToken().type == TokenType.IF){
+				elsePart = ifStatement();
+			}
+			else{
+				elsePart = block();
+			}
+		}
+		return new IfNode(condition, thenPart, elsePart);
+	}
+
+	public Node whileLoop(){
+		Node condition, body;
+		matchAndEat(TokenType.WHILE);
+		condition = expression();
+		body = block();
+		return new WhileNode(condition, body);
+	}
 
 	public Node assignment(){
 		Node node = null;
@@ -347,6 +379,15 @@ class Parser{
 	public boolean isAssignment(){
 		TokenType type = currentToken().type;
 		return type == TokenType.KEYWORD && nextToken().type == TokenType.ASSIGNMENT;
+	}
+
+	public boolean isWhile(){
+		return currentToken().type == TokenType.WHILE;
+	}
+
+	public boolean isIfElse(){
+		TokenType type = currentToken().type;
+		return type == TokenType.IF || type == TokenType.ELSE;
 	}
 
 
