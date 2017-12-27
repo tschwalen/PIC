@@ -1,6 +1,14 @@
 import java.util.List;
 import java.util.LinkedList;
 
+
+// AST node for a block of code. 
+// Contains a list of statements.
+// Upon evalutation, iterate over the list of statements and evaluate them
+//
+// EBNF:
+// <block> ::= (<statement>)+
+
 public class BlockNode extends Node {
 
 	private List<Node> statements;

@@ -1,3 +1,12 @@
+
+// AST node for if-else construct. 
+// Has a node for the conditional expression, the if body, and the else body.
+// Upon evaluation, evaluate the condition, the evaluate the if body if the condition is true, 
+// and the else body otherwise.
+//
+// EBNF:
+// <if> ::= IF <bool-expression> <block> [ ELSE <block>] END
+
 public class IfNode extends Node {
 
 	public Node condition;

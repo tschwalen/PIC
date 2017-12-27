@@ -91,13 +91,33 @@ class Tokenizer{
 		return type;
 	}
 
+	public boolean isPunc(char chr){
+		boolean puncOp = chr == ',';
+		return puncOp;
+	}
+
+	public TokenType findPuncType(char firstOperator){
+	TokenType type = TokenType.UNKNOWN;
+	switch(firstOperator){
+		case ',':
+			type = TokenType.COMMA;
+		break;
+	}
+	return type;
+}
+
 	public boolean isParen(char chr){
-		return chr == '(' || chr == ')';
+		return chr == '(' || chr == ')' ||
+				chr == '[' || chr == ']' ||
+				chr == ',';
 	}
 
 	public TokenType findParenType(char chr){
 		if(chr == '(') return TokenType.LEFT_PAREN;
 		if(chr == ')') return TokenType.RIGHT_PAREN;
+		if(chr == '[') return TokenType.LEFT_BRACKET;
+		if(chr == ']') return TokenType.RIGHT_BRACKET;
+		if(chr == ',') return TokenType.COMMA;
 		return TokenType.UNKNOWN; 
 	}
 
@@ -118,6 +138,10 @@ class Tokenizer{
 						TokenType opType = findOpType(firstOperator, '\0');
 						token = new Token(Character.toString(chr), opType);
 						state = TokenizeState.OPERATOR;
+					}
+					else if (isPunc(chr)){
+						TokenType puncType = findPuncType(chr);
+						tokens.add(new Token(Character.toString(chr), puncType));
 					}
 					else if(isParen(chr)){
 						TokenType parenType = findParenType(chr);

@@ -49,12 +49,22 @@ class Parser{
 		return new BlockNode(statements);
 	}
 
+
+	// a statement is:
+	// 		an assignment
+	//		a while loop
+	//		an if-else
+	// 		a PRINT or PRINTLN
+	// 		a Wait
 	public Node statement(){
 		Node node = null;
 		TokenType type = currentToken().type;
 
 		if(isAssignment()){
 			node = assignment();
+		}
+		else if (isArrayAccess()){
+			node = arrayUpdate();
 		}
 		else if(isWhile()){
 			node = whileLoop();
@@ -118,6 +128,35 @@ class Parser{
 
 	/////////////////////////////////////////
 
+	public Node arrayUpdate(){
+		String arrayName = matchAndEat(TokenType.KEYWORD).text;
+		Node array = new VariableNode(arrayName, this);
+
+		matchAndEat(TokenType.LEFT_BRACKET);
+		Node indexExpr = expression();
+		matchAndEat(TokenType.RIGHT_BRACKET);
+
+		matchAndEat(TokenType.ASSIGNMENT);
+		Node rightSideExpr = expression();
+
+		return new ArrayUpdateNode(array, indexExpr, rightSideExpr);
+	}
+
+	public Node arrayDefinition(String name){
+		List<Node> elements = new ArrayList<>();
+		matchAndEat(TokenType.LEFT_BRACKET);
+
+		if(currentToken().type != TokenType.RIGHT_BRACKET){
+			elements.add(expression());
+			while(currentToken().type != TokenType.RIGHT_BRACKET){
+				matchAndEat(TokenType.COMMA);
+				elements.add(expression());
+			}
+		}
+		matchAndEat(TokenType.RIGHT_BRACKET);
+		return new AssignmentNode(name, new ArrayNode(elements), this);
+	}
+
 	public Node ifStatement(){
 		Node condition = null, thenPart = null, elsePart = null;
 
@@ -151,8 +190,13 @@ class Parser{
 		// eat the equals sign
 		matchAndEat(TokenType.ASSIGNMENT);
 
-		Node value = expression();
-		node = new AssignmentNode(name, value, this);
+		if(currentToken().type == TokenType.LEFT_BRACKET){
+			node = arrayDefinition(name);
+		}
+		else{
+			Node value = expression();
+			node = new AssignmentNode(name, value, this);
+		}
 
 		return node;
 	}
@@ -235,8 +279,15 @@ class Parser{
 
 	public Node variable(){
 		Token token = matchAndEat(TokenType.KEYWORD);
-		Node node = new VariableNode(token.text, this);
-		return node;
+		Node varNode = new VariableNode(token.text, this);
+
+		if(currentToken().type == TokenType.LEFT_BRACKET){
+			matchAndEat(TokenType.LEFT_BRACKET);
+			Node key = expression();
+			matchAndEat(TokenType.RIGHT_BRACKET);
+			return new LookupNode((VariableNode) varNode, key);
+		}
+		return varNode;
 	}
 
 	public Node term(){
@@ -390,7 +441,15 @@ class Parser{
 		return type == TokenType.IF || type == TokenType.ELSE;
 	}
 
+	public boolean isArrayAccess(){
+		TokenType type = currentToken().type;
+		return type == TokenType.KEYWORD && 
+			nextToken().type == TokenType.LEFT_BRACKET;
+	}
 
+
+	////////////////////////
+	// end of recognizers
 	////////////////////////
 
 

@@ -1,3 +1,13 @@
+// AST node for all of the binary operations in the language
+//
+// Stores right and left operands as nodes -- these may be elemental values or more 
+// expressions. Right and Left nodes must be evaluated before the operation can be
+// applied.
+
+// EBNF
+// 
+
+
 public class BinOpNode extends Node {
 	public TokenType op;
 	public Node left;
