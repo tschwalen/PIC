@@ -26,14 +26,8 @@ class Tokenizer{
 			case "else":
 				type = TokenType.ELSE;
 				break;
-			case "print":
-				type = TokenType.PRINT;
-				break;
-			case "println":
-				type = TokenType.PRINTLN;
-				break;
-			case "wait":
-				type = TokenType.WAIT;
+			case "def":
+				type = TokenType.DEF;
 				break;
 			default:
 				type = TokenType.KEYWORD;

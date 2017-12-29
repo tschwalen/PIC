@@ -32,10 +32,9 @@ public class Interpreter {
 
 		if(debug) dumpTokens(parser);
 
-		parser.matchAndEat(TokenType.SCRIPT);
-		Node script = parser.block();
+		Node program = parser.program();
 
-		script.eval();
+		program.eval();
 	}
 
 	public void dumpTokens(Parser parser){

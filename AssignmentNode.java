@@ -1,4 +1,5 @@
 public class AssignmentNode extends Node {
+
 	public String name;
 	public Node value;
 	public Parser parser;
@@ -13,7 +14,9 @@ public class AssignmentNode extends Node {
 	}
 
 	public Object eval(){
+		if(value instanceof Function){
+			return parser.setVariable(name, value);
+		}
 		return parser.setVariable(name, value.eval());
 	}
-
 }

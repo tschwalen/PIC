@@ -1,0 +1,15 @@
+script
+	string1 = "Bep"
+	string2 = "is"
+	arr = [1,2,3,4]
+
+	print(string1)
+	wait(400)
+	println(string2)
+
+	println(arraySize(arr))
+
+	newString = strConcat(string1, string2)
+	println(newString)
+	println(strLen(newString))
+end

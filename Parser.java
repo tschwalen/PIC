@@ -39,6 +39,10 @@ class Parser{
 
 	// symbol table methods end //
 
+	public RootNode program(){
+		matchAndEat(TokenType.SCRIPT);
+		return new RootNode(block(), Util.createInlineFunctions(this));
+	}
 
 	public BlockNode block(){
 		List<Node> statements = new LinkedList<>();
@@ -66,23 +70,17 @@ class Parser{
 		else if (isArrayAccess()){
 			node = arrayUpdate();
 		}
+		else if(isFunctionCall()){
+			node = functionCall();
+		}
 		else if(isWhile()){
 			node = whileLoop();
 		}
 		else if(isIfElse()){
 			node = ifStatement();
 		}
-		else if(type == TokenType.PRINT){
-			matchAndEat(TokenType.PRINT);
-			node = new PrintNode(expression(), "sameline");
-		}
-		else if(type == TokenType.PRINTLN){
-			matchAndEat(TokenType.PRINTLN);
-			node = new PrintNode(expression(), "newline");
-		}
-		else if(type == TokenType.WAIT){
-			matchAndEat(TokenType.WAIT);
-			node = new WaitNode(expression());
+		else if(isFunctionDef()){
+			node = functionDefinition();
 		}
 		else {
 			System.out.println("Unknown language construct: " 
@@ -127,6 +125,34 @@ class Parser{
 	}
 
 	/////////////////////////////////////////
+
+	public Node functionCall(){
+		String functionName = matchAndEat(TokenType.KEYWORD).text;
+		Node calleeFunctionName = new VariableNode(functionName, this);
+		matchAndEat(TokenType.LEFT_PAREN);
+		List<Parameter> actualParameters = functionCallParameters();
+		matchAndEat(TokenType.RIGHT_PAREN);
+
+		Node functionCallNode = new FunctionCallNode(calleeFunctionName, 
+													actualParameters, this);
+		return functionCallNode;
+	}
+
+	public Node functionDefinition(){
+		matchAndEat(TokenType.DEF);
+		String funcName = matchAndEat(TokenType.KEYWORD).text;
+
+		matchAndEat(TokenType.LEFT_PAREN);
+		List<Parameter> parameters = functionDefParameters();
+		matchAndEat(TokenType.RIGHT_PAREN);
+
+		Node functionBody = block();
+
+		Function function = new Function(funcName, functionBody, parameters);
+		Node functionVariable = new AssignmentNode(funcName, function, this);
+
+		return functionVariable;
+	}
 
 	public Node arrayUpdate(){
 		String arrayName = matchAndEat(TokenType.KEYWORD).text;
@@ -278,16 +304,23 @@ class Parser{
 	}
 
 	public Node variable(){
-		Token token = matchAndEat(TokenType.KEYWORD);
-		Node varNode = new VariableNode(token.text, this);
-
-		if(currentToken().type == TokenType.LEFT_BRACKET){
-			matchAndEat(TokenType.LEFT_BRACKET);
-			Node key = expression();
-			matchAndEat(TokenType.RIGHT_BRACKET);
-			return new LookupNode((VariableNode) varNode, key);
+		Node node = null;
+		if(nextToken().type == TokenType.LEFT_PAREN){
+			node = functionCall();
 		}
-		return varNode;
+		else {
+			Token token = matchAndEat(TokenType.KEYWORD);
+			Node varNode = new VariableNode(token.text, this);
+
+			if(currentToken().type == TokenType.LEFT_BRACKET){
+				matchAndEat(TokenType.LEFT_BRACKET);
+				Node key = expression();
+				matchAndEat(TokenType.RIGHT_BRACKET);
+				return new LookupNode((VariableNode) varNode, key);
+			}
+			else return varNode;
+		}
+		return node;
 	}
 
 	public Node term(){
@@ -388,6 +421,25 @@ class Parser{
 		return new BinOpNode(TokenType.NOTEQUAL, node , arithmeticExpression());
 	}
 
+	// function definition parameters method
+
+	public List functionDefParameters(){
+		List<Parameter> parameters = null;
+		if(currentToken().type == TokenType.KEYWORD){
+			parameters = new ArrayList();
+			parameters.add(new Parameter(matchAndEat(TokenType.KEYWORD).text));
+
+			while(currentToken().type == TokenType.COMMA){
+				matchAndEat(TokenType.COMMA);
+				parameters.add(new Parameter(matchAndEat(TokenType.KEYWORD).text));
+			}
+		}
+		return parameters;
+	}
+
+	/////////////////////////
+
+
 	/////////////////////////////
 	// recognizers
 	/////////////////////////////
@@ -447,10 +499,52 @@ class Parser{
 			nextToken().type == TokenType.LEFT_BRACKET;
 	}
 
+	public boolean isFunctionDef(){
+		TokenType type = currentToken().type;
+		return type == TokenType.DEF && nextToken().type == TokenType.KEYWORD;
+	}
+
+	public boolean isFunctionCall(){
+		TokenType type = currentToken().type;
+		return type == TokenType.KEYWORD && nextToken().type == TokenType.LEFT_PAREN;
+	}
+
 
 	////////////////////////
 	// end of recognizers
 	////////////////////////
+
+
+	// "Because this behavior is so critically important... "
+	public Object executeFunction(Function function, List boundParameters){
+		Map<String, Object> savedSymbolTable = new HashMap<String, Object>(symbolTable);
+
+		for(int index = 0; index < boundParameters.size(); index++){
+			BoundParameter param = (BoundParameter) boundParameters.get(index);
+			setVariable(param.getName(), param.getValue());
+		}
+
+		Object ret = function.eval();
+
+		symbolTable = savedSymbolTable;
+
+		return ret;
+	}
+
+	public List functionCallParameters(){
+		List<Parameter> actualParameters = null;
+		Node expression = expression();
+		if(expression != null){
+			actualParameters = new ArrayList();
+			actualParameters.add(new Parameter(expression));
+			while(currentToken().type == TokenType.COMMA){
+				matchAndEat(TokenType.COMMA);
+				actualParameters.add(new Parameter(expression()));
+			}
+		}
+
+		return actualParameters;
+	}
 
 
 
